@@ -3,6 +3,16 @@ import sqlite3
 def init_db():
     conn = sqlite3.connect("db.sqlite3")
     cur = conn.cursor()
+
+    # Create users table
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        user_id TEXT PRIMARY KEY,
+        name TEXT
+    )
+    """)
+
+    # Create inventory table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -12,21 +22,37 @@ def init_db():
         collected_at TEXT
     )
     """)
+
     conn.commit()
     conn.close()
+
+def get_user_by_name(name):
+    conn = sqlite3.connect("db.sqlite3")
+    cur = conn.cursor()
+    cur.execute("SELECT user_id FROM users WHERE name=?", (name,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
 
 def save_item(user_id, name, rarity, collected_at):
     conn = sqlite3.connect("db.sqlite3")
     cur = conn.cursor()
-    cur.execute("INSERT INTO inventory (user_id, item_name, rarity, collected_at) VALUES (?, ?, ?, ?)",
-                (user_id, name, rarity, collected_at))
+    cur.execute("""
+        INSERT INTO inventory (user_id, item_name, rarity, collected_at)
+        VALUES (?, ?, ?, ?)
+    """, (user_id, name, rarity, collected_at))
     conn.commit()
     conn.close()
 
 def get_inventory(user_id):
     conn = sqlite3.connect("db.sqlite3")
     cur = conn.cursor()
-    cur.execute("SELECT item_name, rarity, collected_at FROM inventory WHERE user_id=?", (user_id,))
+    cur.execute("""
+        SELECT item_name, rarity, collected_at
+        FROM inventory
+        WHERE user_id=?
+    """, (user_id,))
     results = cur.fetchall()
     conn.close()
     return results

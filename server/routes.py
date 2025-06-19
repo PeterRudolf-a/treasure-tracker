@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
-from models import save_item, get_inventory
+from models import save_item, get_inventory, get_user_by_name
+import uuid
+import sqlite3
 
 routes = Blueprint('routes', __name__)
 
@@ -13,3 +15,25 @@ def collect_item():
 def inventory(user_id):
     items = get_inventory(user_id)
     return jsonify(items)
+
+@routes.route("/register", methods=["POST"])
+def register_user():
+    data = request.get_json()
+    name = data["name"].strip()
+    if not name:
+        return jsonify({"error": "Name cannot be empty"}), 400
+
+    # Reuse existing user if exists
+    user_id = get_user_by_name(name)
+    if user_id:
+        return jsonify({"user_id": user_id})
+
+    # Otherwise create new
+    new_user_id = str(uuid.uuid4())
+    conn = sqlite3.connect("db.sqlite3")
+    cur = conn.cursor()
+    cur.execute("INSERT INTO users (user_id, name) VALUES (?, ?)",
+                (new_user_id, name))
+    conn.commit()
+    conn.close()
+    return jsonify({"user_id": new_user_id})
