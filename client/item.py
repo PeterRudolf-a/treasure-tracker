@@ -8,6 +8,7 @@ class Item:
 
     def __init__(self, x, y, name, rarity):
         self.sprite = pygame.image.load("assets/item.png").convert_alpha()
+        self.sprite = pygame.transform.scale(self.sprite, (32, 32))
         self.rect = pygame.Rect(x, y, self.SPRITE_SIZE, self.SPRITE_SIZE)
         self.name = name
         self.rarity = rarity
