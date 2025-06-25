@@ -4,17 +4,23 @@ import requests
 from datetime import datetime, timezone
 
 class Item:
-    SPRITE_SIZE = 32  # Class-level constant
+    SPRITE_SIZE = 32
+    RARITY_COLORS = {
+        "Common": (255, 255, 255),
+        "Rare": (0, 0, 255),
+        "Legendary": (255, 215, 0)
+    }
 
     def __init__(self, x, y, name, rarity):
         self.sprite = pygame.image.load("assets/item.png").convert_alpha()
-        self.sprite = pygame.transform.scale(self.sprite, (32, 32))
+        self.sprite = pygame.transform.scale(self.sprite, (self.SPRITE_SIZE, self.SPRITE_SIZE))
         self.rect = pygame.Rect(x, y, self.SPRITE_SIZE, self.SPRITE_SIZE)
         self.name = name
         self.rarity = rarity
 
-    def draw(self, screen):
-        screen.blit(self.sprite, self.rect)
+    def draw(self, screen, offset):
+        screen.blit(self.sprite, (self.rect.x - offset.x, self.rect.y - offset.y))
+        pygame.draw.rect(screen, self.RARITY_COLORS[self.rarity], self.rect.move(-offset.x, -offset.y), 2)
 
     def send_to_server(self, user_id):
         data = {
@@ -32,6 +38,6 @@ class Item:
     def random_spawn():
         name = random.choice(["Ruby", "Emerald", "Golden Idol"])
         rarity = random.choice(["Common", "Rare", "Legendary"])
-        x, y = random.randint(0, 768), random.randint(0, 568)
+        x = random.randint(0, 1600 - 32)
+        y = random.randint(0, 1200 - 32)
         return Item(x, y, name, rarity)
-

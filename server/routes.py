@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from models import save_item, get_inventory, get_user_by_name
 import uuid
 import sqlite3
+import os
+DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite3")
+
 
 routes = Blueprint('routes', __name__)
 
@@ -30,7 +33,8 @@ def register_user():
 
     # Otherwise create new
     new_user_id = str(uuid.uuid4())
-    conn = sqlite3.connect("db.sqlite3")
+    conn = sqlite3.connect(DB_PATH)
+
     cur = conn.cursor()
     cur.execute("INSERT INTO users (user_id, name) VALUES (?, ?)",
                 (new_user_id, name))

@@ -1,25 +1,38 @@
 import pygame
 from player import Player
 from item import Item
+from server.models import save_score
+import time
+
+TILE_SIZE = 64
+WORLD_WIDTH = 1600
+WORLD_HEIGHT = 1200
 
 class Game:
     def __init__(self, screen, user_id):
         self.screen = screen
         self.user_id = user_id
         self.player = Player(400, 300)
-        self.items = [Item.random_spawn() for _ in range(5)]
+        self.items = []
+        self.generate_items(30)
         self.score = 0
 
         self.bg_tile = pygame.image.load("assets/background.png").convert()
         self.font = pygame.font.SysFont("Arial", 24)
+        self.collect_sound = pygame.mixer.Sound("assets/collect.wav")
 
-        # Load sound effect
-        try:
-            self.collect_sound = pygame.mixer.Sound("assets/collect.wav")
-        except:
-            self.collect_sound = None
+        self.start_time = pygame.time.get_ticks()
+        self.time_limit = 60000  # 60 seconds
+        self.game_over = False
+
+    def generate_items(self, count):
+        for _ in range(count):
+            self.items.append(Item.random_spawn())
 
     def update(self):
+        if self.game_over:
+            return
+
         keys = pygame.key.get_pressed()
         self.player.move(keys)
 
@@ -28,28 +41,35 @@ class Game:
             exit()
 
         for item in self.items[:]:
-            if self.player.rect.colliderect(item.rect):
+            if self.player.rect.colliderect(item.rect.inflate(-10, -10)):
                 item.send_to_server(self.user_id)
                 self.items.remove(item)
-                self.score += 1
-                if self.collect_sound:
-                    self.collect_sound.play()
+                self.score += {"Common": 1, "Rare": 3, "Legendary": 5}[item.rarity]
+                self.collect_sound.play()
+
+        remaining = max(0, (self.time_limit - (pygame.time.get_ticks() - self.start_time)))
+        if remaining == 0:
+            self.game_over = True
+            save_score(self.user_id, self.score)
 
     def draw(self):
-        # Draw tiled background
-        tile_w, tile_h = self.bg_tile.get_size()
-        for x in range(0, 800, tile_w):
-            for y in range(0, 600, tile_h):
-                self.screen.blit(self.bg_tile, (x, y))
+        offset = pygame.Vector2(self.player.rect.centerx - 400, self.player.rect.centery - 300)
 
-        self.player.draw(self.screen)
+        for x in range(0, WORLD_WIDTH, TILE_SIZE):
+            for y in range(0, WORLD_HEIGHT, TILE_SIZE):
+                self.screen.blit(self.bg_tile, (x - offset.x, y - offset.y))
+
         for item in self.items:
-            item.draw(self.screen)
+            item.draw(self.screen, offset)
+        self.player.draw(self.screen, offset)
 
-        # Draw score
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (10, 10))
 
-        # Draw quit instruction
-        quit_text = self.font.render("Press Q to Quit", True, (200, 200, 200))
-        self.screen.blit(quit_text, (10, 40))
+        remaining = max(0, (self.time_limit - (pygame.time.get_ticks() - self.start_time)) // 1000)
+        timer_text = self.font.render(f"Time: {remaining}", True, (255, 255, 255))
+        self.screen.blit(timer_text, (680, 10))
+
+        if self.game_over:
+            end_text = self.font.render("Time's up! Press Q to Quit", True, (255, 0, 0))
+            self.screen.blit(end_text, (250, 300))
