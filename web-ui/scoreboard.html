@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Treasure Tracker – Scoreboard</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="index.html">Menu</a>
+      <a href="login.html">Play Game</a>
+    </div>
+    <h1>Top Scores</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Score</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="scoreTable"></tbody>
+    </table>
+    <p id="status" class="message"></p>
+
+    <script>
+      fetch("http://localhost:5000/scores")
+        .then((res) => res.json())
+        .then((scores) => {
+          const tbody = document.getElementById("scoreTable");
+          if (!scores.length) {
+            tbody.innerHTML = "<tr><td colspan='3'>No scores yet.</td></tr>";
+          } else {
+            scores.forEach(([u, s, d]) => {
+              const date = new Date(d).toLocaleString();
+              tbody.innerHTML += `<tr><td>${u}</td><td>${s}</td><td>${date}</td></tr>`;
+            });
+          }
+        })
+        .catch(
+          () =>
+            (document.getElementById("status").textContent =
+              "Failed to load scores.")
+        );
+    </script>
+  </body>
+</html>

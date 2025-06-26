@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import save_item, get_inventory, get_user_by_name
+from models import save_item, get_inventory, get_user_by_name, save_score
 import uuid
 import sqlite3
 import os
@@ -18,6 +18,13 @@ def collect_item():
 def inventory(user_id):
     items = get_inventory(user_id)
     return jsonify(items)
+
+@routes.route("/submit_score", methods=["POST"])
+def submit_score():
+    data = request.get_json()
+    save_score(data["user_id"], data["score"])
+    return jsonify({"status": "score saved"}), 200
+
 
 @routes.route("/register", methods=["POST"])
 def register_user():

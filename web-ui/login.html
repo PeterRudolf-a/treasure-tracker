@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Login – Treasure Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="index.html">Menu</a>
+      <a href="scoreboard.html">Scoreboard</a>
+    </div>
+    <h1>Enter Your Name</h1>
+    <form id="loginForm">
+      <input type="text" id="nameInput" placeholder="Your name" required />
+      <button type="submit">Start Game</button>
+    </form>
+    <p id="status" class="message"></p>
+
+    <script>
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("nameInput").value.trim();
+          const res = await fetch("http://localhost:5000/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+          if (res.ok) {
+            const { user_id: userId } = await res.json();
+            location.href = `game.html?user_id=${userId}&name=${encodeURIComponent(
+              name
+            )}`;
+          } else {
+            document.getElementById("status").textContent =
+              "Registration failed.";
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Treasure Tracker – Game</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      canvas {
+        display: block;
+        margin: auto;
+        background: #000;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <a href="index.html">Menu</a>
+      <a href="scoreboard.html">Scoreboard</a>
+    </div>
+    <h1>Treasure Tracker (Web)</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <p style="text-align: center" id="scoreDisplay">Score: 0</p>
+    <p style="text-align: center" id="timer">Time left: 60s</p>
+    <button onclick="quitGame()">Quit to Menu</button>
+
+    <audio id="collectSound" src="assets/collect.mp3"></audio>
+
+    <script>
+      const params = new URLSearchParams(location.search);
+      const userId = params.get("user_id"),
+        name = params.get("name") || "Player";
+      const canvas = document.getElementById("gameCanvas"),
+        ctx = canvas.getContext("2d");
+      const tileImg = new Image();
+      tileImg.src = "assets/background.png";
+      const playerImg = new Image();
+      playerImg.src = "assets/player.png";
+      const itemImg = new Image();
+      itemImg.src = "assets/item.png";
+      const collectSound = document.getElementById("collectSound");
+
+      const TILES = [],
+        TILE_SIZE = 64;
+      const WORLD_W = 2000,
+        WORLD_H = 2000;
+      const player = { x: WORLD_W / 2, y: WORLD_H / 2, size: 48, speed: 5 };
+      const items = Array.from({ length: 30 }, () => ({
+        x: Math.random() * (WORLD_W - 32),
+        y: Math.random() * (WORLD_H - 32),
+        size: 32,
+        collected: false,
+      }));
+      let score = 0,
+        timeLeft = 60;
+      document.getElementById("scoreDisplay").textContent = `Score: ${score}`;
+      const timerEl = document.getElementById("timer");
+
+      const keys = {};
+      document.addEventListener("keydown", (e) => (keys[e.key] = true));
+      document.addEventListener("keyup", (e) => (keys[e.key] = false));
+
+      function quitGame() {
+        if (confirm("Quit to menu?")) window.location.href = "index.html";
+      }
+
+      function update() {
+        if (timeLeft <= 0) return;
+        if (keys["ArrowUp"]) player.y -= player.speed;
+        if (keys["ArrowDown"]) player.y += player.speed;
+        if (keys["ArrowLeft"]) player.x -= player.speed;
+        if (keys["ArrowRight"]) player.x += player.speed;
+        player.x = Math.max(0, Math.min(player.x, WORLD_W - player.size));
+        player.y = Math.max(0, Math.min(player.y, WORLD_H - player.size));
+
+        items.forEach((item) => {
+          if (!item.collected) {
+            const dx = player.x + player.size / 2 - (item.x + item.size / 2);
+            const dy = player.y + player.size / 2 - (item.y + item.size / 2);
+            const dist = Math.hypot(dx, dy);
+            if (dist < (player.size + item.size) / 2) {
+              item.collected = true;
+              score += 10;
+              collectSound.currentTime = 0;
+              collectSound.play();
+              document.getElementById(
+                "scoreDisplay"
+              ).textContent = `Score: ${score}`;
+            }
+          }
+        });
+      }
+
+      function draw() {
+        const camX = player.x + player.size / 2 - canvas.width / 2;
+        const camY = player.y + player.size / 2 - canvas.height / 2;
+        const sx = Math.floor(camX / TILE_SIZE) * TILE_SIZE - camX;
+        const sy = Math.floor(camY / TILE_SIZE) * TILE_SIZE - camY;
+
+        for (let x = sx; x < canvas.width; x += TILE_SIZE)
+          for (let y = sy; y < canvas.height; y += TILE_SIZE)
+            ctx.drawImage(tileImg, x, y, TILE_SIZE, TILE_SIZE);
+
+        items.forEach((item) => {
+          const dx = item.x - camX,
+            dy = item.y - camY;
+          if (
+            !item.collected &&
+            dx >= -item.size &&
+            dx <= canvas.width &&
+            dy >= -item.size &&
+            dy <= canvas.height
+          )
+            ctx.drawImage(itemImg, dx, dy, item.size, item.size);
+        });
+
+        const px = player.x - camX,
+          py = player.y - camY;
+        ctx.drawImage(playerImg, px, py, player.size, player.size);
+      }
+
+      function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+      }
+
+      setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = `Time left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          fetch("http://localhost:5000/submit_score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, score }),
+          });
+          alert(`Time’s up! You scored ${score}.`);
+          window.location.href = "scoreboard.html";
+        }
+      }, 1000);
+
+      tileImg.onload =
+        playerImg.onload =
+        itemImg.onload =
+          () => {
+            if (tileImg.complete && playerImg.complete && itemImg.complete)
+              gameLoop();
+          };
+    </script>
+  </body>
+</html>
