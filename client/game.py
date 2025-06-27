@@ -1,7 +1,12 @@
 import pygame
 from player import Player
 from item import Item
-from server.models import save_score
+import sys
+import os
+
+# Add server directory to Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
+from models import save_score
 import time
 
 TILE_SIZE = 64

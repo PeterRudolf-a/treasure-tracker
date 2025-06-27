@@ -1,0 +1,6 @@
+{
+  "include": ["client", "server"],
+  "extraPaths": ["server"],
+  "reportMissingImports": true,
+  "reportMissingModuleSource": true
+}
