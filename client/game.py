@@ -3,11 +3,7 @@ from player import Player
 from item import Item
 import sys
 import os
-
-# Add server directory to Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 from models import save_score
-import time
 
 TILE_SIZE = 64
 WORLD_WIDTH = 1600
@@ -35,15 +31,19 @@ class Game:
             self.items.append(Item.random_spawn())
 
     def update(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
+
         if self.game_over:
             return
 
         keys = pygame.key.get_pressed()
         self.player.move(keys)
-
-        if keys[pygame.K_q]:
-            pygame.quit()
-            exit()
 
         for item in self.items[:]:
             if self.player.rect.colliderect(item.rect.inflate(-10, -10)):
@@ -60,14 +60,16 @@ class Game:
     def draw(self):
         offset = pygame.Vector2(self.player.rect.centerx - 400, self.player.rect.centery - 300)
 
-        for x in range(0, WORLD_WIDTH, TILE_SIZE):
-            for y in range(0, WORLD_HEIGHT, TILE_SIZE):
+        screen_width, screen_height = self.screen.get_size()
+        for x in range(int(offset.x // TILE_SIZE) * TILE_SIZE, int(offset.x + screen_width), TILE_SIZE):
+            for y in range(int(offset.y // TILE_SIZE) * TILE_SIZE, int(offset.y + screen_height), TILE_SIZE):
                 self.screen.blit(self.bg_tile, (x - offset.x, y - offset.y))
 
         for item in self.items:
             item.draw(self.screen, offset)
         self.player.draw(self.screen, offset)
 
+        pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 160, 30))
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (10, 10))
 
@@ -78,3 +80,4 @@ class Game:
         if self.game_over:
             end_text = self.font.render("Time's up! Press Q to Quit", True, (255, 0, 0))
             self.screen.blit(end_text, (250, 300))
+
