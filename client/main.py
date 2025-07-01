@@ -1,6 +1,17 @@
 import pygame
+import requests
+import sys
 from menu import show_menu
 from game import Game
+
+def register_user(name):
+    try:
+        response = requests.post("http://localhost:5000/register", json={"name": name})
+        response.raise_for_status()
+        return response.json()["user_id"]
+    except Exception as e:
+        print(f"[ERROR] Failed to register user: {e}")
+        sys.exit()
 
 def main():
     pygame.init()
@@ -8,20 +19,28 @@ def main():
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Treasure Tracker")
 
-    name = show_menu(screen)  # returns the entered name
-    game = Game(screen, name)
+    name = show_menu(screen)
+    user_id = register_user(name)
 
+    game = Game(screen, user_id)
     clock = pygame.time.Clock()
+
     while True:
-        for evt in pygame.event.get():
-            if evt.type == pygame.QUIT:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
 
         game.update()
         game.draw()
         pygame.display.flip()
         clock.tick(60)
+
+        if game.play_again:
+            game = Game(screen, user_id)
 
 if __name__ == "__main__":
     main()

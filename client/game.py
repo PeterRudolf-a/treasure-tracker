@@ -3,6 +3,9 @@ from player import Player
 from item import Item
 import sys
 import os
+
+# Add the server directory to the path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
 from models import save_score
 
 TILE_SIZE = 64
@@ -25,6 +28,7 @@ class Game:
         self.start_time = pygame.time.get_ticks()
         self.time_limit = 60000  # 60 seconds
         self.game_over = False
+        self.play_again = False  # Flag to trigger restart from main.py
 
     def generate_items(self, count):
         for _ in range(count):
@@ -35,9 +39,13 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
-                pygame.quit()
-                sys.exit()
+            elif self.game_over:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self.play_again = True
+                    elif event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
 
         if self.game_over:
             return
@@ -69,6 +77,7 @@ class Game:
             item.draw(self.screen, offset)
         self.player.draw(self.screen, offset)
 
+        # Score and timer HUD
         pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 160, 30))
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (10, 10))
@@ -78,6 +87,7 @@ class Game:
         self.screen.blit(timer_text, (680, 10))
 
         if self.game_over:
-            end_text = self.font.render("Time's up! Press Q to Quit", True, (255, 0, 0))
-            self.screen.blit(end_text, (250, 300))
-
+            end_text = self.font.render("⏰ Time's up!", True, (255, 0, 0))
+            prompt_text = self.font.render("Press R to Play Again or Q to Quit", True, (255, 255, 255))
+            self.screen.blit(end_text, (270, 280))
+            self.screen.blit(prompt_text, (170, 320))
