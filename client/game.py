@@ -29,6 +29,19 @@ class Game:
         self.time_limit = 60000  # 60 seconds
         self.game_over = False
         self.play_again = False  # Flag to trigger restart from main.py
+        self.fade_frames = [
+            pygame.image.load(f"assets/fade_frames/fade_{alpha:03}.png").convert_alpha()
+            for alpha in range(0, 256, 16)
+        ]
+
+    def fade_out(self):
+        for frame in self.fade_frames:
+            self.draw()  # Redraw everything underneath
+            self.screen.blit(frame, (0, 0))  # Overlay the fade frame
+            pygame.display.flip()
+            pygame.time.delay(40)  # Delay between frames (adjust for speed)
+
+
 
     def generate_items(self, count):
         for _ in range(count):
@@ -61,9 +74,12 @@ class Game:
                 self.collect_sound.play()
 
         remaining = max(0, (self.time_limit - (pygame.time.get_ticks() - self.start_time)))
-        if remaining == 0:
+        if remaining == 0 and not self.game_over:
             self.game_over = True
             save_score(self.user_id, self.score)
+            self.fade_out()
+            
+
 
     def draw(self):
         offset = pygame.Vector2(self.player.rect.centerx - 400, self.player.rect.centery - 300)
