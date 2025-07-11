@@ -3,6 +3,7 @@ from player import Player
 from item import Item
 import sys
 import os
+import glob
 
 # Add the server directory to the path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server")))
@@ -28,20 +29,13 @@ class Game:
         self.start_time = pygame.time.get_ticks()
         self.time_limit = 60000  # 60 seconds
         self.game_over = False
-        self.play_again = False  # Flag to trigger restart from main.py
-        self.fade_frames = [
-            pygame.image.load(f"assets/fade_frames/fade_{alpha:03}.png").convert_alpha()
-            for alpha in range(0, 256, 16)
-        ]
 
-    def fade_out(self):
-        for frame in self.fade_frames:
-            self.draw()  # Redraw everything underneath
-            self.screen.blit(frame, (0, 0))  # Overlay the fade frame
-            pygame.display.flip()
-            pygame.time.delay(40)  # Delay between frames (adjust for speed)
-
-
+        # Load fade frames
+        fade_frame_files = sorted(
+            glob.glob("assets/fade_frames/fade_*.png"),
+            key=lambda f: int(os.path.basename(f).split("_")[1].split(".")[0])
+        )
+        self.fade_frames = [pygame.image.load(f).convert() for f in fade_frame_files]
 
     def generate_items(self, count):
         for _ in range(count):
@@ -52,13 +46,11 @@ class Game:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif self.game_over:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        self.play_again = True
-                    elif event.key == pygame.K_q:
-                        pygame.quit()
-                        sys.exit()
+
+            # Remove restart logic — main.py will handle it
+            if self.game_over:
+                return
+
 
         if self.game_over:
             return
@@ -74,12 +66,10 @@ class Game:
                 self.collect_sound.play()
 
         remaining = max(0, (self.time_limit - (pygame.time.get_ticks() - self.start_time)))
-        if remaining == 0 and not self.game_over:
+        if remaining == 0:
             self.game_over = True
             save_score(self.user_id, self.score)
-            self.fade_out()
-            
-
+            self.play_fade_animation()
 
     def draw(self):
         offset = pygame.Vector2(self.player.rect.centerx - 400, self.player.rect.centery - 300)
@@ -107,3 +97,9 @@ class Game:
             prompt_text = self.font.render("Press R to Play Again or Q to Quit", True, (255, 255, 255))
             self.screen.blit(end_text, (270, 280))
             self.screen.blit(prompt_text, (170, 320))
+
+    def play_fade_animation(self):
+        for frame in self.fade_frames:
+            self.screen.blit(frame, (0, 0))
+            pygame.display.flip()
+            pygame.time.delay(30)
